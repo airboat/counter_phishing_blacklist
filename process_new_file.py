@@ -114,6 +114,7 @@ def load_file():
             continue
         if entry in blacklist:
             print ("\t[-] Found {} but it is already present in the blacklist.")
+            continue
         print ("\t[+] Added {}".format(clean_entry))
         new_entries.add(clean_entry)
         internal_record[clean_entry] = str(time.time())
