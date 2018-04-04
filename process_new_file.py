@@ -43,7 +43,9 @@ def preprocess_domain(domain):
     #Lets ensure that it's in an nice string format for idna
 
     try:
-        domain = domain.strip("*.").strip(".").strip().lower().strip("www.")
+        domain = domain.strip("*.").strip(".").strip().lower()
+        if domain.startswith("www."):
+            domain = domain[4:]
         domain = domain.encode("idna").decode("utf-8")
     except Exception as e:
         print (e)
