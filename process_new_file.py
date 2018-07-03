@@ -87,6 +87,11 @@ def extend_json_dict_file(filename, contents):
     f.write(json.dumps(combined_dict,indent=4, sort_keys=True))
     f.close()
 
+def get_existing_whitelist():
+    r = requests.get("https://etherscamdb.info/api/whitelist/")
+    whitelist = r.json()
+    return whitelist
+
 def load_file():
     ensure_that_domain_file_exists_and_is_valid_json()
     f = open(args.blacklist_file, 'r')
@@ -109,11 +114,15 @@ def load_file():
     #this date to clean out old domains from the blacklist.
     internal_record = {}
 
+
+    whitelist = set(get_existing_whitelist())
     #Loop through each of the entries
     for entry in contents:
         clean_entry = preprocess_domain(entry)
         if not clean_entry:
             continue
+        if entry in whitelist:
+            print ("\t[-] Found {} but it is whitelisted.")
         if entry in blacklist:
             print ("\t[-] Found {} but it is already present in the blacklist.")
             continue
