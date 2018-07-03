@@ -61,6 +61,8 @@ def get_existing_blacklists():
     try:
         r = requests.get("https://api.infura.io/v2/blacklist")
         blacklist = r.json()['blacklist']
+        r2 = requests.get("https://etherscamdb.info/api/blacklist/")
+        blacklist = blacklist + r2.json()
         return set(blacklist)
     except:
         print ("[x] Error fetching blacklist, please ensure that you are able to reach the EAL endpoint.")
