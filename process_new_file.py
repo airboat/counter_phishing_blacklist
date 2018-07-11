@@ -58,15 +58,20 @@ def get_existing_blacklists():
     '''
     Fetch the existing EAL blacklist and ensure that we do not duplicate entries.
     '''
+    blacklist = []
     try:
         r = requests.get("https://api.infura.io/v2/blacklist")
         blacklist = r.json()['blacklist']
-        r2 = requests.get("https://etherscamdb.info/api/blacklist/")
-        blacklist = blacklist + r2.json()
-        return set(blacklist)
     except:
         print ("[x] Error fetching blacklist, please ensure that you are able to reach the EAL endpoint.")
         return False
+    try:
+        r2 = requests.get("https://etherscamdb.info/api/blacklist/")
+        blacklist = blacklist + r2.json()
+    except:
+        print ("[x] Error fetching blacklist, please ensure that you are able to reach the Etherscam endpoint.")
+        return False
+    return set(blacklist)
 
 def extend_json_array_file(filename, contents):
     f = open(filename, 'r')
