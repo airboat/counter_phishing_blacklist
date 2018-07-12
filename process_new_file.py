@@ -81,8 +81,9 @@ def get_existing_blacklists():
 
     try:
         r3 = requests.get("https://raw.githubusercontent.com/MetaMask/eth-phishing-detect/master/src/config.json")
-        blacklist = blacklist + r3.json()['https://raw.githubusercontent.com/MetaMask/eth-phishing-detect/master/src/config.json']
-    except:
+        blacklist = blacklist + r3.json()['blacklist']
+    except Exception as e:
+        print (e)
         print ("Error parsing metamask blacklist")
         False
     
