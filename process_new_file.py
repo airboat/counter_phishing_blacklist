@@ -54,6 +54,13 @@ def preprocess_domain(domain):
 
     return domain
 
+def push_changes_to_eal():
+    os.system("git add . ")
+    os.system("git commit -m \"updated blacklist\"")
+    os.system("git push")
+
+
+
 def get_existing_blacklists():
     '''
     Fetch the existing EAL blacklist and ensure that we do not duplicate entries.
@@ -71,6 +78,14 @@ def get_existing_blacklists():
     except:
         print ("[x] Error fetching blacklist, please ensure that you are able to reach the Etherscam endpoint.")
         return False
+
+    try:
+        r3 = requests.get("https://raw.githubusercontent.com/MetaMask/eth-phishing-detect/master/src/config.json")
+        blacklist = blacklist + r3.json()['https://raw.githubusercontent.com/MetaMask/eth-phishing-detect/master/src/config.json']
+    except:
+        print ("Error parsing metamask blacklist")
+        False
+    
     return set(blacklist)
 
 def extend_json_array_file(filename, contents):
@@ -150,3 +165,4 @@ args = parser.parse_args()
 
 if __name__ == "__main__":
     load_file()
+    push_changes_to_eal()
