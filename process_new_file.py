@@ -4,7 +4,67 @@ import os
 from shutil import copyfile
 import argparse
 import sys
+from settings import urlscanapikey
 import time
+from pprint import pformat
+from tldextract import tldextract
+
+
+def urlscan_screenshot(url):
+    #First, let's see if it's been indexed already.
+    domain = tldextract.extract(url).fqdn
+    print("\t\t[-] Looking up domain screenshot {}".format(domain))
+    if lookup_screenshot(url):
+        print ("\t\t[-] Already screenshotted...")
+        return
+    else:
+        print ("\t\t[-] No screenshot yet, sending to urlscan...")
+        urlscanio = "https://urlscan.io/api/v1/scan/"
+        key = urlscanapikey
+        headers  = {
+            "Content-Type" : "application/json",
+            "API-Key" : key
+        }
+        data = {
+            "url" : url,
+            "public" : "on"
+        }
+        try:
+            r = requests.post(urlscanio, headers=headers, json=data)
+            save_screenshot(url, r.json()['result'])
+        except Exception as e:
+            print (e)
+            pass
+        time.sleep(2)
+
+
+def lookup_screenshot(url):
+    domain = tldextract.extract(url).fqdn
+    if os.path.exists("screenshots/mapping.json"):
+        f = open("screenshots/mapping.json", 'r')
+        current = f.read()
+        f.close()
+        current = json.loads(current)
+        return current.get(domain, False)
+    else:
+        return False
+
+def save_screenshot(url, urlscanurl):
+    domain = tldextract.extract(url).fqdn
+    if os.path.exists("screenshots/mapping.json"):
+        f = open("screenshots/mapping.json", 'r')
+        current = f.read()
+        f.close()
+        current = json.loads(current)
+        current[domain] = urlscanurl
+        f = open("screenshots/mapping.json", 'w')
+        current = f.write(json.dumps(current))
+        f.close()
+    else:
+        current = {domain : urlscanurl}
+        f = open("screenshots/mapping.json", 'w')
+        current = f.write(json.dumps(current))
+        f.close()
 
 def ensure_that_domain_file_exists_and_is_valid_json():
     '''
@@ -151,6 +211,7 @@ def load_file():
             continue
         print ("\t[+] Added {}".format(clean_entry))
         new_entries.add(clean_entry)
+        urlscan_screenshot(clean_entry)
         internal_record[clean_entry] = str(time.time())
     print ("[+] Found {} new entries...".format(len(new_entries)))
 
@@ -166,4 +227,4 @@ args = parser.parse_args()
 
 if __name__ == "__main__":
     load_file()
-    push_changes_to_eal()
+    #push_changes_to_eal()
