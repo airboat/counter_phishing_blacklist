@@ -227,4 +227,4 @@ args = parser.parse_args()
 
 if __name__ == "__main__":
     load_file()
-    #push_changes_to_eal()
+    push_changes_to_eal()
