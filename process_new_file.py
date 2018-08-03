@@ -8,7 +8,7 @@ from settings import urlscanapikey
 import time
 from pprint import pformat
 from tldextract import tldextract
-
+from datetime import datetime
 
 def urlscan_screenshot(url):
     #First, let's see if it's been indexed already.
@@ -37,6 +37,15 @@ def urlscan_screenshot(url):
             pass
         time.sleep(2)
 
+def fetch_screenshots():
+    if os.path.exists("screenshots/mapping.json"):
+        f = open("screenshots/mapping.json", 'r')
+        current = f.read()
+        f.close()
+        current = json.loads(current)
+        return current
+    else:
+        return False
 
 def lookup_screenshot(url):
     domain = tldextract.extract(url).fqdn
@@ -115,11 +124,37 @@ def preprocess_domain(domain):
     return domain
 
 def push_changes_to_eal():
-    os.system("git add . ")
+    os.system("git add blacklists/domains.json ")
+    os.system("git add screenshots/mapping.json ")
     os.system("git commit -m \"updated blacklist\"")
     os.system("git push")
 
-
+def prepare_pull_metamask(iosiro_blacklist):
+    blacklist = []
+    whitelist = get_existing_whitelist()
+    try:
+        r3 = requests.get("https://raw.githubusercontent.com/MetaMask/eth-phishing-detect/master/src/config.json")
+        blacklist = blacklist + r3.json()['blacklist']
+    except Exception as e:
+        print (e)
+        print ("Error parsing metamask blacklist")
+        return False
+    final = []
+    description = ""
+    screenshots = fetch_screenshots()
+    for entry in iosiro_blacklist:
+        if entry in blacklist or entry in whitelist:
+            continue
+        final.append(entry)
+        description+="{}: {} added on {}\n".format(entry, screenshots.get(entry, "*not available*"), str(datetime.now()))
+    if len(final) > 0:
+        final.sort()
+        f = open("metamask_pull.txt", 'w')
+        f.write(pformat(final).replace("'", '"'))
+        f.write("\n**********\n")
+        f.write(description)
+        f.close()
+        print("[+] Wrote metamask pr to metamask_pull.txt")
 
 def get_existing_blacklists():
     '''
@@ -173,6 +208,8 @@ def extend_json_dict_file(filename, contents):
 def get_existing_whitelist():
     r = requests.get("https://etherscamdb.info/api/whitelist/")
     whitelist = r.json()
+    r3 = requests.get("https://raw.githubusercontent.com/MetaMask/eth-phishing-detect/master/src/config.json")
+    whitelist = whitelist + r3.json()['whitelist']
     return whitelist
 
 def load_file():
@@ -197,6 +234,8 @@ def load_file():
     #this date to clean out old domains from the blacklist.
     internal_record = {}
 
+    #Unfiltered....
+    unfiltered_blacklist = set()
 
     whitelist = set(get_existing_whitelist())
     #Loop through each of the entries
@@ -206,6 +245,8 @@ def load_file():
             continue
         if entry in whitelist:
             print ("\t[-] Found {} but it is whitelisted.")
+            continue
+        unfiltered_blacklist.add(clean_entry)
         if entry in blacklist:
             print ("\t[-] Found {} but it is already present in the blacklist.")
             continue
@@ -219,6 +260,7 @@ def load_file():
     extend_json_dict_file("internal_domain_tracking.json", internal_record)
 
     ensure_that_domain_file_exists_and_is_valid_json()
+    prepare_pull_metamask(unfiltered_blacklist)
 
 parser = argparse.ArgumentParser(description='Tool for storing and commiting blacklist to git.')
 parser.add_argument('--blacklist-file', metavar='N',type=str,nargs="?", const="blacklist", required=True,
