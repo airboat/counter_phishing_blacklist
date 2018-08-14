@@ -257,6 +257,7 @@ def load_file():
     print ("[+] Found {} new entries...".format(len(new_entries)))
 
     extend_json_array_file("blacklists/domains.json", new_entries)
+    
     extend_json_dict_file("internal_domain_tracking.json", internal_record)
 
     ensure_that_domain_file_exists_and_is_valid_json()
